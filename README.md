@@ -3,7 +3,7 @@
 ## Overview
 ![WatDFS Architecture](https://github.com/abc1203/simple-distributed-system/blob/main/img/DFS_architecture.png)
 
-WatDFS is a distributed file system that provides transparent access to remote files using FUSE. It is implemented with the upload-download model: files are copied from the server to the client and the client performs all operations locally.
+A simple distributed file system that provides transparent access to remote files using FUSE. It is implemented with the upload-download model: files are copied from the server to the client and the client performs all operations locally.
 
 - **Download/Upload Mechanism**:  
   - Files are transferred atomically using `lock`/`unlock` RPC calls to ensure consistency
