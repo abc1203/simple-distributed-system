@@ -39,25 +39,6 @@ struct ClientData {
     // pthread_mutex_t cacheMutex;
 };
 
-int download_file(void *userdata, const char *path);
-int upload_file(void *userdata, const char *path);
-char* get_local_path(void *userdata, const char *path);
-bool check_freshness(void *userdata, const char *path);
-bool read_only(int flags) { return (flags & O_ACCMODE) == O_RDONLY; }
-
-int open_RPC(void *userdata, const char *path, struct fuse_file_info *fi);
-int release_RPC(void *userdata, const char *path, struct fuse_file_info *fi);
-int getattr_RPC(void *userdata, const char *path, struct stat *statbuf);
-int mknod_RPC(void *userdata, const char *path, mode_t mode, dev_t dev);
-int read_RPC(void *userdata, const char *path, char *buf, size_t size,
-                    off_t offset, struct fuse_file_info *fi);
-int write_RPC(void *userdata, const char *path, const char *buf,
-                     size_t size, off_t offset, struct fuse_file_info *fi);
-int truncate_RPC(void *userdata, const char *path, off_t newsize);
-int fsync_RPC(void *userdata, const char *path, struct fuse_file_info *fi);
-int utimensat_RPC(void *userdata, const char *path, const struct timespec ts[2]);
-int lock_RPC(void *userdata, const char *path, rw_lock_mode_t mode);
-int unlock_RPC(void *userdata, const char *path, rw_lock_mode_t mode);
 
 // SETUP AND TEARDOWN
 void *watdfs_cli_init(struct fuse_conn_info *conn, const char *path_to_cache,
