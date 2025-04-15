@@ -1,1 +1,46 @@
+1. upload/download mechanism
+     - watdfs_cli_open call start by trying to transfer the file from the server to client
+     - must handle cases where file exists or DNE on server
+     - To transfer a file from the server tothe client you should: 
+         1. truncate the file at the client
+         2. getfile attributes from the server
+         3. read the file from the server
+         4. write the file to the client
+         5. update the file metadata at the client. 
+         - You should reuse RPC calls from Project 1 to complete this task
+     - atomic file transfer
+         - if C1 is writing & C2 is reading, C2 shouldn't see the changes by C1
+         - implement RPC calls lock(path, mode) & unlock(path, mode) to indicate a file in transfer is TO or FROM server
+         - mark file in transfer as either read or write
+     - releasing a file 
+         - write mode => file should be flushed from client to server
+         - file should then be closed by both client & server; file metadata at client should also be released
+         - when writing tests, look at errno when open calls fails on subsequent open/close
+        
+2. enforce mutual exclusion of writes
+     - mutual exclusion on server
+         - -EACCES if client attempts to open w/ write but file is already opened w/ write 
+         - file can be opened by client when file is closed (watdfs_cli_release)
+         - concurrent readers is allowed
+         - should maintain a thread synchronized DS that maps file name to status (open for read & write, etc.)
+     - mutual exclusion on client 
+         - prohibited to open same file multiple times
+         - -EMFILE if an application attempts to open a file that's already open (this is before -EACCES)
+         - test must track current open files & modes (read/write) at the client
+        
+3. timeout caching
+     - read()
+         - if T-Tc < t or t_client == t_server, can use locally copied; download a new one from server ow
+         - T-Tc < t shouldn't access the server; t_client == t_server should
+     - write()
+         - writes should be applied to local copy, and periodically write back 
+         - if not fresh at the end of write/truncate, write back & update T_server to T_client
+         - client is done (watdfs_cli_release) => always write back 
+     - fsync()
+         - fsync => client's copy must be written to server immediately
+     - other calls
+         - file not open: open & transfer file, perform op, transfer back, close file 
+         - file opened in write mode: no read freshness calls 
+     - client-side cache 
+         - client persists data in path_to_cache directory and NOT in mem
 
