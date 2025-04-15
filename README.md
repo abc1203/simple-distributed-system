@@ -1,37 +1,53 @@
 # simple-distributed-system
-A simple distributed file system built using FUSE and RPC.
-
-![WatDFS Architecture](image.png)
 
 ## Overview
-WatDFS is a distributed file system that provides transparent access to remote files using FUSE (Filesystem in Userspace). It operates in two modes:  
-1. **Remote Access (P1)**: Directly forwards file operations to a remote server via RPC.  
-2. **Upload/Download (P2)**: Caches files locally, enforces mutual exclusion, and syncs changes with the server based on timeout-based freshness checks.  
+![WatDFS Architecture](https://github.com/abc1203/simple-distributed-system/blob/main/img/DFS_architecture.png)
 
-The system comprises:  
-- **Client**: Mounts a FUSE filesystem, handles local caching, and communicates with the server via RPC.  
-- **Server**: Manages remote file operations and enforces write mutual exclusion.  
+WatDFS is a distributed file system that provides transparent access to remote files using FUSE. It is implemented with the upload-download model: files are copied from the server to the client and the client performs all operations locally.
 
-## Implementation Details
-
-### Key Features
 - **Download/Upload Mechanism**:  
-  - Files are transferred atomically using `lock`/`unlock` RPC calls to ensure consistency.  
-  - `download_file` fetches files from the server to the client cache; `upload_file` syncs local changes back.  
+  - Files are transferred atomically using `lock`/`unlock` RPC calls to ensure consistency
+  - `download_file` fetches files from the server to the client cache; `upload_file` syncs local changes back
 
 - **Mutual Exclusion**:  
-  - **Server**: Uses reader-writer locks (`rw_lock.h`) to allow concurrent reads but exclusive writes.  
-  - **Client**: Tracks open files to prevent multiple writes (returns `-EMFILE` if conflicting opens occur).  
-
-- **RPC Operations**:  
-  - Implements RPC calls like `getattr`, `mknod`, `open`, `read`, `write`, and custom `lock`/`unlock` for atomic transfers.  
-  - Follows strict protocol definitions (Section 4.1 of specs) for argument serialization.  
+  - **Server**: Uses reader-writer locks to enable concurrent reads but exclusive writes
+  - **Client**: Tracks open files to prevent multiple writes
 
 - **Timeout-Based Caching**:  
-  - Files are validated using freshness checks (`Tc` timestamp) against a `cache_interval`. Stale files trigger re-downloads.  
+  - Files are validated using freshness checks
+  - Stale files trigger re-downloads
 
-## Demo: Running WatDFS
+- **RPC Operations**:  
+  - Implements RPC calls including `getattr`, `mknod`, `open`, `read`, `write`, and custom `lock`/`unlock` for atomic transfers
+
+
+## Usage
 
 ### 1. Compile the Project
 ```bash
-make clean all  # Compiles libwatdfs.a, watdfs_server, and watdfs_client
+make clean all
+```
+
+### 2. Start Server on Linux Terminal
+```bash
+mkdir -p /tmp/$USER/server
+./watdfs_server /tmp/$USER/server
+```
+the terminal should output SERVER_ADDRESS and SERVER_PORT
+
+### 3. Start Client on New Terminal
+```bash
+export SERVER_ADDRESS=${SERVER_ADDRESS}
+export SERVER_PORT=${SERVER_PORT}
+export CACHE_INTERVAL_SEC=${CACHE_INTERVAL}
+mkdir -p /tmp/$USER/cache /tmp/$USER/mount
+./watdfs_client -s -f -o direct_io /tmp/$USER/cache /tmp/$USER/mount
+```
+
+### 4. Run Bash Cmds on Client
+```bash
+touch /tmp/$USER/mount/myfile.txt # Create empty file
+echo "Hello World" > /tmp/$USER/mount/myfile.txt # Write to a file
+cat /tmp/$USER/mount/myfile.txt # Read file
+stat /tmp/$USER/mount/myfile.txt # Get file attributes
+```
